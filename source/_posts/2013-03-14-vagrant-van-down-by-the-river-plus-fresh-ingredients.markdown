@@ -1,6 +1,6 @@
 ---
 layout: post
-title: ""Vagrant van down by the river... with fresh ingredients!""
+title: "Vagrant van down by the river... with fresh ingredients!"
 date: 2013-03-14 12:35
 comments: true
 categories: 
@@ -13,7 +13,7 @@ I was super excited to see the release of [Vagrant 1.1.0 from Hashicorp](http://
 First step was to use my [source_ingredient_vagrant](https://github.com/easybake-ingredients/vagrant/blob/master/.chef/plugins/knife/source_ingredient_vagrant.rb) knife plugin to auto download any new versions that might be available into my :file_cache_path and create some data_bag/json files describing the ingredients. The plugin automatically found the new releases for me and updated my data bags!
 
 
-# knife source ingredient vagrant
+## knife source ingredient vagrant
 
 ```
 [hh@M18xR2:~/easybake/oven/repos/cloud-kitchen (master)✗]
@@ -39,21 +39,20 @@ data_bags/vagrant/windows_v1_1_0.json
 
 The resultant data_bag jason files can be seen at [ingredients.easybake.cd](http://ingredients.easybake.cd) or specifically:
 
-https://github.com/easybake-ingredients/vagrant
+[https://github.com/easybake-ingredients/vagrant](https://github.com/easybake-ingredients/vagrant)
 
 I *could* upload those vagrant data_bag/ingredients to a chef server, but for now I just add chef-solo-search to my list of recipes to run. **It would be really interesting that if used as part of a continuous delivery process, imagine automatically integrate third party ingredients as they update...**
 
-In my recipes I set some attributes to specify which externally sourced ingredients ingredients I want to include... and optionally the pinned semantic versions:
-[easybake-workstation/attributes/default.rb](https://github.com/easybake-cookbooks/easybake-workstation/blob/master/attributes/default.rb#L5):
+## [easybake-workstation](https://github.com/easybake-cookbooks/easybake-workstation)
 
-```ruby
+In trying to easily bake a devops workstation, I set some attributes to specify which externally sourced ingredients ingredients I want to include... and optionally the pinned semantic versions:
+
+```ruby easybake-workstation/attributes/default.rb https://github.com/easybake-cookbooks/easybake-workstation/blob/master/attributes/default.rb#L5
 default['easybake-workstation']['ingredients']['vagrant']['desc']='Vagrant'
 ```
-
 By default we use the latest version of each ingredient:
-[easybake-workstation/recipes/ingredients.rb](https://github.com/easybake-cookbooks/easybake-workstation/blob/master/recipes/ingredients.rb)
 
-```ruby
+```ruby easybake-workstation/recipes/ingredients.rb https://github.com/easybake-cookbooks/easybake-workstation/blob/master/recipes/ingredients.rb
 node['easybake-workstation']['ingredients'].each do |data_bag,attrs|
   all_artifacts = search(data_bag,
   "os_#{node.platform}:#{node.platform_version} AND arch:#{node.kernel.machine}")
@@ -61,9 +60,9 @@ node['easybake-workstation']['ingredients'].each do |data_bag,attrs|
     all_artifacts.map{|v| v['version']}.flatten.uniq.sort.last
 ```
 
-We then search for the desired ingredient and ensure it's in the cache, and eventually set the path to the local file for it.For vagrant we just install the package specified by the ingredient attribute.
+We then search for the desired ingredient and ensure it's in the cache, and eventually set the path to the local file for it.For vagrant we just install the package specified by the ingredients file attribute.
 
-```ruby
+```ruby easybake-workstation/recipes/ingredients.rb https://github.com/easybake-cookbooks/easybake-workstation/blob/master/recipes/ingredients.rb
  query = "version:#{node['easybake-workstation']['ingredients'][data_bag]['version']}"
  search(data_bag,query).each do |ingredient|
     cache_file = File.join(Chef::Config[:file_cache_path], ing['filename'])
@@ -73,19 +72,18 @@ end
 ```
 
 For vagrant we just install the package specified by the ingredient attribute.
-[easybake-workstation/recipes/vagrant.rb](https://github.com/easybake-cookbooks/easybake-workstation/blob/master/recipes/vagrant.rb)
 
-```ruby
+```ruby easybake-workstation/recipes/vagrant.rb https://github.com/easybake-cookbooks/easybake-workstation/blob/master/recipes/vagrant.rb
 dpkg_package 'vagrant' do
   source node['easybake-workstation']['ingredients']['vagrant']['file']
 end
 ```
 
-# Vagrant as an automatically updated ingredient
+## Vagrant as an automatically updated ingredient
 
 Obviously there is some work to be done to the easybake-workstation to make it work on all supported platforms, chef ingredients at this point are really conceptual, but I hope this real world example helps generate some discussions.
 
-```
+```bash
 [hh@M18xR2:~/easybake/oven/repos/cloud-kitchen (master)✗] 
 ☺ ➔  sudo chef-solo -c .chef/solo.rb 
 /home/hh/easybake/oven/repos/cloud-kitchen/.chef
